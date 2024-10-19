@@ -4,26 +4,20 @@ from downloader import start_download
 
 # youtube downloader
 
-# start app
-# read in channel list
-# read in new channels to add to channel list
-# add new channels to channel list
-# read watched videos
-# read ignored
-# read broken
 # check each video to see if it should be downloaded
-# create category repository
-# create date repository inside category repository
+# create category directory
+# create date repository inside category directory
 # download videos
 # sponsorblock videos
+# save downloaded videos, ignored, broken
 
 
 # files:
 
-# main
-# config reader
-# youtube downloader
-# sponsorblocker
+# main DONE
+# config reader DONE
+# youtube downloader TODO
+# sponsorblocker TODO
 
 
 

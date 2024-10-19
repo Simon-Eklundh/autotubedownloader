@@ -4,20 +4,13 @@ from collections import defaultdict
 
 from yt_dlp import YoutubeDL
 
-config_directory = os.getcwd() + "/configs"
+config_directory = "../config"
 already_watched = {}
 ignored = {}
 broken_videos: dict[str, list] = {}
 keywords_to_skip: dict[str, list] = {}
 channels = {}
-word_probabilities = {}
 checked_titles = {}
-
-
-# TODO read in new channels after the old ones
-
-def read_and_add_new_channels_to_channel_dict():
-    pass
 
 
 def read_config():
@@ -28,8 +21,26 @@ def read_config():
     read_not_working_videos()
     read_keywords_to_skip()
     read_checked_titles()
-    pass
+    save_channel_dict()
 
+
+# TODO read in new channels after the old ones
+def read_and_add_new_channels_to_channel_dict():
+    global channels
+    if not os.path.exists("../categories"):
+        return
+    for category in os.listdir("../categories"):
+        with open( "../categories/" + category, encoding='utf-8') as f:
+            for line in f:
+                with YoutubeDL({"quiet": "true"}) as ydl:
+                    test = ydl.extract_info(line, download=False)
+                    if str(test['uploader']) not in channels:
+                        category_in_dict = channels.get(str(category.split(".")[0]), {})
+                        category_in_dict[str(test['uploader'])] = str(test['channel_id'])
+                        channels.update({str(category.split(".")[0]): category_in_dict})
+    # delete all category files
+    for category in os.listdir("../categories"):
+        os.remove("../categories/" + category)
 
 def read_ignored():
     try:
@@ -38,7 +49,7 @@ def read_ignored():
         ignored = json.load(f)
     except:
         ignored = {}
-    pass
+
 
 def save_ignored():
     with open(config_directory + '/ignored.json', 'w', encoding='utf-8') as outfile:
@@ -98,41 +109,23 @@ def get_keywords_to_skip():
     return keywords_to_skip
 
 
-def save_channel_dict(channel_dict):
+def save_channel_dict():
     with open(config_directory + '/channels.json', 'w', encoding='utf-8') as outfile:
-        json.dump(channel_dict, outfile, indent=4)
+        global channels
+        json.dump(channels, outfile, indent=4)
 
 
 def read_channel_dict():
+    global channels
     try:
         f = open(config_directory + "/channels.json", encoding='utf-8')
-        global channels
+
         channels = json.load(f)
     except:
         channels = {}
+
+def get_channels():
     return channels
-
-
-def read_legacy_channel_converter_dict_lists():
-    try:
-        f = open(config_directory + "/legacy_converter_dict.json", encoding='utf-8')
-        global channels
-        legacy_channels = json.load(f)
-    except:
-        legacy_channels = {}
-    return legacy_channels
-
-
-def save_legacy_converter_dict(legacy):
-    with open(config_directory + '/legacy_converter_dict.json', 'w', encoding='utf-8') as outfile:
-        json.dump(legacy, outfile, indent=4)
-
-def get_channel_dict(channel_link: str):
-    with YoutubeDL({"quiet": "true"}) as ydl:
-        test = ydl.extract_info(channel_link, download=False)
-
-    return {str(test['uploader']): str(test['channel_id'])}
-
 
 
 def save_checked_titles():
