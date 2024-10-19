@@ -16,8 +16,13 @@ checked_titles = {}
 
 # TODO read in new channels after the old ones
 
+def read_and_add_new_channels_to_channel_dict():
+    pass
+
+
 def read_config():
-    read_word_probabilities()
+    read_channel_dict()
+    read_and_add_new_channels_to_channel_dict()
     read_already_watched()
     read_ignored()
     read_not_working_videos()
@@ -52,29 +57,6 @@ def read_already_watched():
         already_watched = json.load(f)
     except:
         already_watched = {}
-
-
-def save_word_probabilities():
-    tmp = dict(word_probabilities)
-    with open(config_directory + '/word_probabilities.json', 'w') as f:
-        json.dump(tmp, f)
-
-
-def get_word_probabilities():
-    return word_probabilities
-
-
-def read_word_probabilities():
-    try:
-        with open(config_directory + '/word_probabilities.json', 'r') as f:
-            data = json.load(f)
-        global word_probabilities
-        tmp = data
-        word_probabilities = defaultdict(lambda: {True: 0.5, False: 0.5})
-        for word, probabilities in tmp.items():
-            word_probabilities[word].update(probabilities)
-    except:
-        word_probabilities = defaultdict(lambda: {True: 0.5, False: 0.5})
 
 
 def get_already_watched():
