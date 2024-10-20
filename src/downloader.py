@@ -7,7 +7,7 @@ from yt_dlp import YoutubeDL
 
 import sponsorblocker
 from config_reader import get_channels, get_ignored, get_already_watched, save_ignored, \
-    get_keywords_to_skip, get_broken_videos, save_broken_videos
+    get_keywords_to_skip, get_broken_videos, save_broken_videos, save_downloaded_list
 
 
 def get_channel_feed(channel):
@@ -36,7 +36,7 @@ def add_to_fail_category(error, entry):
         print(error)
         print(error.args[0])
         print("this is a new one")
-        key = "unknown"
+        key = error.args[0]
     if key not in broken_videos:
         broken_videos[key] = []
     broken_videos[key].append(entry['link'])
@@ -93,19 +93,16 @@ def should_skip_keyword(entry, category, ignored):
 
 def has_skip_reason(entry, category):
     ignored = get_ignored()
-    already_watched = get_already_watched()
     broken_videos = get_broken_videos()
     if should_skip_keyword(entry, category, ignored):
         return True
     if entry['title'] in ignored:
         return True
-    if entry['title'] in already_watched:
-        return True
     if category in broken_videos and entry['title'] in broken_videos[category]:
         return True  # I think this works
-    if is_short(entry['link']):
+    if is_short(entry):
         return True
-    pass
+    return False
 
 
 def should_skip(entry, category):
@@ -113,6 +110,9 @@ def should_skip(entry, category):
         ignored = get_ignored()
         ignored[entry['title']] = 1
         save_ignored()
+        return True
+    already_watched = get_already_watched()
+    if entry['author'] in already_watched and entry['title'] in already_watched[entry['author']]:
         return True
     pass
 
@@ -140,10 +140,21 @@ def setup_downloader_options(entry):
     return ydl_opts
 
 
-def download(entry, ydl_opts, sponsorblock_segments):
+def download(entry, ydl_opts, category):
     title_key = entry['title']
     author_key = entry['author']
+    with YoutubeDL(ydl_opts) as ydl:
+        try:
 
+            print(f"Downloading {title_key} by {author_key} from category {category}")
+            # download the video and the metadata
+            ydl.extract_info(entry['link'], download=True)
+            print(f"Downloaded {title_key} by {author_key}")
+        except Exception as e:
+            add_to_fail_category(e, entry)
+            print("Failed download:" + entry['title'] + " " + entry['link'])
+            return False
+    return True
 
 def download_video(entry, category):
     if should_skip(entry, category):
@@ -158,9 +169,14 @@ def download_video(entry, category):
             if not datetime.strptime(info['upload_date'], "%Y%m%d") < datetime.now() - timedelta(days=7):
                 return
 
-    if not download(entry, ydl_opts, sponsorblock_segments):
+    if not download(entry, ydl_opts, category):
         return
-    actual_file = handle_video(author_key, entry, title_key, sponsorblock_segments)
+    author_key = entry['author']
+    title_key = entry['title']
+    actual_file = sponsorblocker.handle_video(author_key, title_key, entry, sponsorblock_segments)
+    already_watched =  get_already_watched()
+    if author_key not in already_watched:
+        already_watched[author_key] = {}
     already_watched[author_key][title_key] = 1
     print("New video from " + author_key + ": " + actual_file + " has been downloaded and cut")
     save_downloaded_list()
@@ -173,12 +189,15 @@ def download_and_sponsorblock():
         if pathlib.Path(category).is_dir() is False:
             os.mkdir(category)
         os.chdir(category)
+        if pathlib.Path(today).is_dir() is False:
+            os.mkdir(today)
+        os.chdir(today)
         for channel in channels[category]:
-            channel_rss_feed = get_channel_feed(channel)
+            channel_rss_feed = get_channel_feed(channels[category][channel])
             for entry in channel_rss_feed.entries:
                 download_video(entry, category)
 
-        os.chdir("..")
+        os.chdir("../..")
     pass
 
 

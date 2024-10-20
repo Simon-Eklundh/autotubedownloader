@@ -1,0 +1,9 @@
+version: "3.3"
+services:
+  myapp:
+    build: .
+    container_name: autotubeDownloader
+    volumes:
+      - ./config:/config  # Bind mount your local directory
+      - ./videos:/videos
+      - ./categories:/categories

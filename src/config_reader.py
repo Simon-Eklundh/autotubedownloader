@@ -4,7 +4,7 @@ from collections import defaultdict
 
 from yt_dlp import YoutubeDL
 
-config_directory = "../config"
+config_directory = os.path.abspath("../config")
 already_watched = {}
 ignored = {}
 broken_videos: dict[str, list] = {}
@@ -57,7 +57,7 @@ def save_ignored():
 
 
 def save_downloaded_list():
-    with open(config_directory + '/watched.json', 'w', encoding='utf-8') as outfile:
+    with open(config_directory + '/watched.json', 'w+', encoding='utf-8') as outfile:
         json.dump(already_watched, outfile, indent=4)
 
 
@@ -116,6 +116,7 @@ def save_channel_dict():
 
 
 def read_channel_dict():
+    print(config_directory + "/channels.json")
     global channels
     try:
         f = open(config_directory + "/channels.json", encoding='utf-8')
